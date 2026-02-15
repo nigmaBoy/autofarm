@@ -31,6 +31,7 @@ local IdlePosition = SafeCFrame * CFrame.new(0, 20, 0)
 local LockingPosition = IdlePosition
 local IsLocking = true
 local KOCount = 0 
+local CameraLock = false
 
 -- Persistent Stats
 local totalMoneyGained = 0 
@@ -174,7 +175,7 @@ end
 LP.CharacterAdded:Connect(CharacterMonitor)
 if LP.Character then task.spawn(CharacterMonitor, LP.Character) end
 
--- // 1. INSTANT GRENADE WELD (IMPROVED ACCURACY) \\ --
+-- // 1. INSTANT GRENADE WELD \\ --
 WS.Ignored.ChildAdded:Connect(function(v)
     if v.Name == "Handle" or v.Name == "Grenade" then
         task.spawn(function()
@@ -191,11 +192,19 @@ WS.Ignored.ChildAdded:Connect(function(v)
     end
 end)
 
--- // 2. PLAYER LOCKING \\ --
+-- // 2. PLAYER LOCKING & AIMBOT \\ --
 RS.RenderStepped:Connect(function()
     if IsLocking and LockingPosition and LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
         LP.Character.HumanoidRootPart.CFrame = LockingPosition
         LP.Character.HumanoidRootPart.Velocity = Vector3.zero
+    end
+    
+    -- GRENADE AIMBOT
+    if CameraLock then
+        local door = WS.MAP.Map.Vault:FindFirstChild("VaultDoor")
+        if door then
+            workspace.CurrentCamera.CFrame = CFrame.lookAt(workspace.CurrentCamera.CFrame.Position, door.Position)
+        end
     end
 end)
 
@@ -374,10 +383,9 @@ local function RunFarm()
         
         local door = WS.MAP.Map.Vault:FindFirstChild("VaultDoor")
         if door then
-            -- FACE THE DOOR AND ZOOM IN
-            LockingPosition = CFrame.lookAt(IdlePosition.Position, door.Position)
-            LP.CameraMaxZoomDistance = 0.5
-            LP.CameraMinZoomDistance = 0.5
+            -- ENTER FIRST PERSON AND AIMBOT ON
+            LP.CameraMode = Enum.CameraMode.LockFirstPerson
+            CameraLock = true
             
             local doorBreakTimeout = tick()
             while WS.MAP.Map.Vault:FindFirstChild("VaultDoor") do
@@ -387,9 +395,9 @@ local function RunFarm()
                 if tick() - doorBreakTimeout > 25 then break end
             end
             
-            -- RESET ZOOM
-            LP.CameraMaxZoomDistance = 100
-            LP.CameraMinZoomDistance = 0.5
+            -- EXIT FIRST PERSON AND AIMBOT OFF
+            CameraLock = false
+            LP.CameraMode = Enum.CameraMode.Classic
         end
         
         if not WS.MAP.Map.Vault:FindFirstChild("VaultDoor") then 
